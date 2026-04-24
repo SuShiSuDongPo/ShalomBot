@@ -28,15 +28,27 @@ function toggleLanguage() {
   currentLang = currentLang === 'en' ? 'he' : 'en';
   localStorage.setItem('kosherLang', currentLang);
   applyLanguage(currentLang);
-  // Re-focus input
   userInput.focus();
+}
+
+// Simple Markdown to HTML conversion (bold & italic only)
+function simpleMarkdownToHTML(text) {
+  // Replace **bold** with <strong>bold</strong>
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Replace *italic* with <em>italic</em>
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  return text;
 }
 
 // Add a message to the chat
 function addMessage(text, sender) {
   const msgDiv = document.createElement('div');
   msgDiv.classList.add('message', sender);
-  msgDiv.innerHTML = `<p>${text}</p>`;
+
+  // Convert markdown for bot messages only (or all, but safe)
+  const formattedText = sender === 'bot' ? simpleMarkdownToHTML(text) : text;
+
+  msgDiv.innerHTML = `<p>${formattedText}</p>`;
   chatArea.appendChild(msgDiv);
   chatArea.scrollTop = chatArea.scrollHeight;
 }
@@ -70,11 +82,14 @@ form.addEventListener('submit', async (e) => {
     const data = await response.json();
     // Remove thinking indicator
     thinkingDiv.remove();
-    // Add bot answer
+    // Add bot answer (markdown will be converted inside addMessage)
     addMessage(data.answer, 'bot');
   } catch (err) {
     thinkingDiv.remove();
-    addMessage(currentLang === 'he' ? 'מצטערים, משהו השתבש. נסו שוב.' : 'Sorry, something went wrong. Please try again.', 'bot');
+    addMessage(
+      currentLang === 'he' ? 'מצטערים, משהו השתבש. נסו שוב.' : 'Sorry, something went wrong. Please try again.',
+      'bot'
+    );
     console.error(err);
   }
 });
